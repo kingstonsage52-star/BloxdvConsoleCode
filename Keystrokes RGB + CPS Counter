@@ -1,0 +1,121 @@
+Code for Keystrokes and cps counter (RGB)
+
+(function(){
+  if(window.__keystrokeHUD){console.log("Keystroke HUD already running. Remove first with window.__removeKeystrokeHUD()");return;}
+
+  // --- Keystrokes HUD ---
+  var state={W:false,A:false,S:false,D:false,Space:false,Shift:false,Crouch:false,LMB:false,RMB:false};
+
+  var hud=document.createElement("div");
+  hud.id="__keystroke_hud_root";
+  hud.style.position="fixed";
+  hud.style.left="18px";
+  hud.style.bottom="18px";
+  hud.style.zIndex=999999999;
+  hud.style.fontFamily="Inter, Arial, sans-serif";
+  hud.style.userSelect="none";
+  hud.style.pointerEvents="auto";
+  hud.style.display="flex";
+  hud.style.flexDirection="column";
+  hud.style.gap="6px";
+
+  var panelStyle=function(el){
+    el.style.background="rgba(10,10,10,0.55)";
+    el.style.backdropFilter="blur(6px)";
+    el.style.color="#fff";
+    el.style.padding="8px 10px";
+    el.style.borderRadius="10px";
+    el.style.boxShadow="0 6px 18px rgba(0,0,0,0.45)";
+    el.style.fontSize="13px";
+    el.style.display="flex";
+    el.style.alignItems="center";
+    el.style.gap="8px";
+  };
+
+  function makeKey(name,width){
+    var k=document.createElement("div");
+    k.className="__keystroke_key";
+    k.style.minWidth=width||"34px";
+    k.style.height="34px";
+    k.style.display="flex";
+    k.style.alignItems="center";
+    k.style.justifyContent="center";
+    k.style.borderRadius="7px";
+    k.style.background="rgba(255,255,255,0.06)";
+    k.style.transition="transform 0.06s, background 0.06s";
+    k.style.fontWeight="700";
+    k.style.letterSpacing="0.6px";
+    k.style.border="2px solid rgba(255,255,255,0.3)"; // border for RGB
+    k.textContent=name;
+    return k;
+  }
+
+  // WASD
+  var rowWASD=document.createElement("div"); panelStyle(rowWASD); rowWASD.style.padding="6px";
+  var kW=makeKey("W"), kA=makeKey("A"), kS=makeKey("S"), kD=makeKey("D");
+  var col=document.createElement("div"); col.style.display="grid"; col.style.gridTemplateRows="34px 34px"; col.style.gap="6px";
+  col.appendChild(kW); var rowASD=document.createElement("div"); rowASD.style.display="flex"; rowASD.style.gap="6px";
+  rowASD.appendChild(kA); rowASD.appendChild(kS); rowASD.appendChild(kD); col.appendChild(rowASD); rowWASD.appendChild(col);
+
+  // Actions
+  var rowActions=document.createElement("div"); panelStyle(rowActions); rowActions.style.padding="6px";
+  var kShift=makeKey("SHIFT","64px"), kSpace=makeKey("SPACE","86px"), kCrouch=makeKey("CROUCH","64px");
+  rowActions.appendChild(kShift); rowActions.appendChild(kSpace); rowActions.appendChild(kCrouch);
+
+  // Mouse
+  var rowMouse=document.createElement("div"); panelStyle(rowMouse); rowMouse.style.padding="6px";
+  var kL=makeKey("LMB"), kR=makeKey("RMB"); rowMouse.appendChild(kL); rowMouse.appendChild(kR);
+
+  // Header
+  var header=document.createElement("div"); header.textContent="Keystrokes"; header.style.fontSize="12px"; header.style.opacity="0.9";
+  header.style.marginBottom="4px"; header.style.cursor="grab"; header.style.userSelect="none"; header.style.color="#e6eef8"; header.style.fontWeight="600"; header.style.textAlign="center";
+
+  var wrapper=document.createElement("div"); panelStyle(wrapper); wrapper.style.flexDirection="column"; wrapper.style.padding="8px";
+  wrapper.appendChild(header); wrapper.appendChild(rowWASD); wrapper.appendChild(rowActions); wrapper.appendChild(rowMouse);
+  hud.appendChild(wrapper); document.body.appendChild(hud);
+
+  var keyEls={W:kW,A:kA,S:kS,D:kD,Space:kSpace,Shift:kShift,Crouch:kCrouch,LMB:kL,RMB:kR};
+  var rgbHue=0;
+
+  function updateVisual(key,on){
+    var el=keyEls[key]; if(!el) return;
+    if(on){ el.style.background="linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.07))"; el.style.transform="translateY(-2px) scale(1.03)"; el.style.boxShadow="0 6px 14px rgba(0,0,0,0.45),0 0 8px rgba(255,255,255,0.04) inset"; }
+    else{ el.style.background="rgba(255,255,255,0.06)"; el.style.transform="translateY(0) scale(1)"; el.style.boxShadow="none"; }
+  }
+
+  function onKeyDown(e){var k=e.code||e.key;if(k==="KeyW")state.W=true; else if(k==="KeyA")state.A=true; else if(k==="KeyS")state.S=true; else if(k==="KeyD")state.D=true; else if(k==="Space")state.Space=true; else if(k==="ShiftLeft"||k==="ShiftRight")state.Shift=true; else if(k==="KeyC")state.Crouch=true; syncAll();}
+  function onKeyUp(e){var k=e.code||e.key;if(k==="KeyW")state.W=false; else if(k==="KeyA")state.A=false; else if(k==="KeyS")state.S=false; else if(k==="KeyD")state.D=false; else if(k==="Space")state.Space=false; else if(k==="ShiftLeft"||k==="ShiftRight")state.Shift=false; else if(k==="KeyC")state.Crouch=false; syncAll();}
+  function onMouseDown(e){if(e.button===0)state.LMB=true;if(e.button===2)state.RMB=true;syncAll(); cpsClick();}
+  function onMouseUp(e){if(e.button===0)state.LMB=false;if(e.button===2)state.RMB=false;syncAll();}
+  function onBlur(){for(var k in state)if(state.hasOwnProperty(k))state[k]=false;syncAll();}
+  function syncAll(){for(var k in state)updateVisual(k,state[k]);}
+
+  // Dragging
+  hud.addEventListener("mousedown",function(e){if(e.target!==header&&!header.contains(e.target)){e.stopPropagation();e.preventDefault();hud.style.pointerEvents="none";setTimeout(function(){hud.style.pointerEvents="auto";},10);}},true);
+  (function(){var dragging=false,startX=0,startY=0,startLeft=0,startBottom=0;header.addEventListener("pointerdown",function(ev){dragging=true;header.setPointerCapture(ev.pointerId);startX=ev.clientX;startY=ev.clientY;var rect=hud.getBoundingClientRect();startLeft=rect.left;startBottom=window.innerHeight-rect.bottom;header.style.cursor="grabbing";ev.preventDefault();});window.addEventListener("pointermove",function(ev){if(!dragging)return;var dx=ev.clientX-startX,dy=ev.clientY-startY;var newLeft=Math.max(6,startLeft+dx);var newBottom=Math.max(6,startBottom-dy);hud.style.left=newLeft+"px";hud.style.bottom=newBottom+"px";});window.addEventListener("pointerup",function(ev){if(!dragging)return;dragging=false;try{header.releasePointerCapture(ev.pointerId);}catch(e){}header.style.cursor="grab";});})();
+
+  window.addEventListener("keydown",onKeyDown,{passive:true}); window.addEventListener("keyup",onKeyUp,{passive:true});
+  window.addEventListener("mousedown",onMouseDown,true); window.addEventListener("mouseup",onMouseUp,true);
+  window.addEventListener("blur",onBlur);
+
+  var prevContext=document.oncontextmenu; document.oncontextmenu=function(e){if(!hud||(e.ctrlKey||e.metaKey)) return prevContext?prevContext(e):true;e.preventDefault();return false;}
+
+  // --- CPS Counter ---
+  var cpsHUD=document.createElement("div"); cpsHUD.style.position="fixed"; cpsHUD.style.right="18px"; cpsHUD.style.bottom="18px"; cpsHUD.style.zIndex=999999999;
+  cpsHUD.style.fontFamily="Inter, Arial, sans-serif"; cpsHUD.style.background="rgba(10,10,10,0.55)"; cpsHUD.style.backdropFilter="blur(6px)";
+  cpsHUD.style.color="#fff"; cpsHUD.style.padding="8px 12px"; cpsHUD.style.borderRadius="10px"; cpsHUD.style.boxShadow="0 6px 18px rgba(0,0,0,0.45)";
+  cpsHUD.style.fontSize="14px"; cpsHUD.textContent="CPS: 0"; document.body.appendChild(cpsHUD);
+
+  var clickTimes=[]; function cpsClick(){var now=Date.now(); clickTimes.push(now); clickTimes=clickTimes.filter(t=>now-t<=1000); cpsHUD.textContent="CPS: "+clickTimes.length;}
+
+  // --- RGB border animation ---
+  var rgbKeys=[kW,kA,kS,kD,kSpace,kShift,kCrouch,kL,kR];
+  function animateRGB(){rgbHue=(rgbHue+1)%360; var color=`hsl(${rgbHue},100%,50%)`; rgbKeys.forEach(k=>k.style.borderColor=color); requestAnimationFrame(animateRGB);}
+  requestAnimationFrame(animateRGB);
+
+  // --- Removal ---
+  window.__removeKeystrokeHUD=function(){try{window.removeEventListener("keydown",onKeyDown);window.removeEventListener("keyup",onKeyUp);window.removeEventListener("mousedown",onMouseDown,true);window.removeEventListener("mouseup",onMouseUp,true);window.removeEventListener("blur",onBlur);document.oncontextmenu=prevContext;if(hud&&hud.parentNode)hud.parentNode.removeChild(hud);if(cpsHUD&&cpsHUD.parentNode)cpsHUD.parentNode.removeChild(cpsHUD);delete window.__keystrokeHUD;delete window.__removeKeystrokeHUD;console.log("Keystroke HUD + CPS removed.");}catch(err){console.error("Error removing HUD:",err);};};
+
+  window.__keystrokeHUD={state:state,remove:window.__removeKeystrokeHUD};
+  console.log("Keystroke HUD + CPS + RGB borders active. Run window.__removeKeystrokeHUD() to remove.");
+})();
