@@ -1,5 +1,4 @@
-Code for Keystrokes and cps counter (RGB)
-
+//Code for Keystrokes and cps counter (RGB)
 (function(){
   if(window.__keystrokeHUD){console.log("Keystroke HUD already running. Remove first with window.__removeKeystrokeHUD()");return;}
 
