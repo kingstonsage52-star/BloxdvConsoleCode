@@ -1,0 +1,16 @@
+//Ad Blocker
+(function(){
+  if(window.adBlockerActive){console.log("Ad blocker already running."); return;}
+
+  // Function to remove elements by selector
+  function removeAds(){
+    const ads = document.querySelectorAll(".ad-banner, iframe, .ads, .ad-container"); // common ad classes
+    ads.forEach(ad => ad.remove());
+  }
+
+  // Run every second to catch new ads
+  setInterval(removeAds, 1000);
+
+  window.adBlockerActive = true;
+  console.log("Ad blocker active ✅");
+})();
